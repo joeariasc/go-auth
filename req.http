@@ -1,0 +1,58 @@
+POST http://localhost:8080/api/auth/register
+Content-Type: application/json
+X-Client-Type: web
+
+{
+  "username": "jam",
+  "description": ""
+}
+
+###
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+# web client
+{
+  "username": "jam",
+  "password": "12",
+  "clientData": {
+    "clientType": "web",
+    "screenResolution": "1920x1080",
+    "colorDepth": "24",
+    "timeZone": "UTC+1",
+    "language": "en-US"
+  }
+}
+
+###
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+# mobile client
+{
+  "username": "mobile",
+  "password": "12",
+  "clientData": {
+    "clientType": "mobile",
+    "deviceModel": "Pixel 9",
+    "osVersion": "29",
+    "screenDensity": "420dpi",
+    "isEmulator": "false"
+  }
+}
+
+###
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+# fail request
+{
+  "username": "mobile",
+  "password": "12",
+  "clientData": {
+    "deviceModel": "Pixel 9",
+    "osVersion": "29",
+    "screenDensity": "420dpi",
+    "isEmulator": "false"
+  }
+}
