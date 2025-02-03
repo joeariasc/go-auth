@@ -1,15 +1,16 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"time"
+
 	"github.com/joeariasc/go-auth/internal/auth/fingerprint"
 	"github.com/joeariasc/go-auth/internal/auth/token"
 	"github.com/joeariasc/go-auth/internal/config"
 	"github.com/joeariasc/go-auth/internal/db"
 	"github.com/joeariasc/go-auth/internal/handlers"
 	"github.com/joeariasc/go-auth/internal/middleware"
-	"log"
-	"net/http"
-	"time"
 )
 
 func main() {
@@ -44,6 +45,9 @@ func main() {
 	mux.HandleFunc("POST /api/auth/register", authHandler.Register)
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 	mux.HandleFunc("/api/auth/verify", authHandler.Verify)
+	mux.HandleFunc("/api/test", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("Hello World!"))
+	})
 
 	// Setup CORS middleware
 	handler := middleware.NewCORSMiddleware(cfg.AllowedOrigins)(mux)

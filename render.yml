@@ -1,0 +1,13 @@
+previewsEnabled: false
+services:
+  - type: web
+    name: stripe
+    runtime: go
+    repo: https://github.com/joeariasc/go-auth
+    region: oregon
+    plan: free
+    branch: main
+    numInstances: 1
+    healthCheckPath: /api/test
+    buildCommand: go build -o app_binary cmd/main.go
+    startCommand: ./app_binary
