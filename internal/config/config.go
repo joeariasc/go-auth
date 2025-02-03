@@ -19,11 +19,20 @@ type Config struct {
 
 // LoadEnvFile loads environment variables from a file and returns Config
 func LoadEnvFile(configFile string) (*Config, error) {
-	envFile, err := os.Open(configFile)
-	if err != nil {
-		return nil, fmt.Errorf("error opening .env file: %v", err)
+	if _, err := os.Stat(configFile); err == nil {
+		envFile, err := os.Open(configFile)
+		if err == nil {
+			defer envFile.Close()
+			// Process file
+			return processEnvFile(envFile)
+		}
 	}
 
+	// Fallback to environment variables
+	return loadFromEnvironment()
+}
+
+func processEnvFile(envFile *os.File) (*Config, error) {
 	defer func(envFile *os.File) {
 		if err := envFile.Close(); err != nil {
 			log.Printf("Error closing .env file: %v", err)
@@ -71,6 +80,10 @@ func LoadEnvFile(configFile string) (*Config, error) {
 		return nil, fmt.Errorf("error scanning .env file: %v", err)
 	}
 
+	return loadFromEnvironment()
+}
+
+func loadFromEnvironment() (*Config, error) {
 	// Parse token duration
 	tokenDuration, err := strconv.Atoi(os.Getenv("TOKEN_DURATION"))
 	if err != nil {
@@ -89,9 +102,7 @@ func LoadEnvFile(configFile string) (*Config, error) {
 		}
 	} else {
 		log.Printf("Warning: ALLOWED_ORIGINS is empty")
-		allowedOrigins = []string{} // Initialize as empty slice instead of nil
 	}
-
 	// Create config with parsed values
 	config := &Config{
 		SecretKey:      os.Getenv("SECRET_KEY"),
