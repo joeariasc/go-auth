@@ -10,12 +10,9 @@ func NewCORSMiddleware(allowedOrigins []string) func(next http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
 
-			// If the origin is in our allowed list, set it specifically
 			if origin != "" && slices.Contains(allowedOrigins, origin) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 			} else if len(allowedOrigins) > 0 {
-				// If we have allowed origins but this one isn't in the list,
-				// set it to the first allowed origin as a fallback
 				w.Header().Set("Access-Control-Allow-Origin", allowedOrigins[0])
 			}
 
