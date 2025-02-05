@@ -62,7 +62,7 @@ func (c *Connection) SetFingerprint(username string, fingerprint string) error {
 
 	row := c.DB.QueryRow(query, username)
 
-	err := row.Scan(&user.Id, &user.Username, &user.CreatedAt, &user.Description, &user.Fingerprint)
+	err := row.Scan(&user.Id, &user.Username, &user.CreatedAt, &user.Description, &user.Fingerprint, &user.Secret)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		return ErrUsernameNotFound
