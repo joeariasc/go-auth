@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -22,12 +23,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	conn, err := db.NewConnection()
+	stringConnection := fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=disable",
+		cfg.DbUser, cfg.DbPassword, cfg.DbHost, cfg.DbPort, cfg.DbName)
+
+	conn, err := db.NewConnection(stringConnection)
 	if err != nil {
 		log.Fatalf("Error connecting to database: %v", err)
 	}
 
-	// Initialize managers
 	fingerprintManager := fingerprint.NewManager()
 
 	tokenConfig := token.ManagerConfig{
