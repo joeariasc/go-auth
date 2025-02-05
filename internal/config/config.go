@@ -15,6 +15,11 @@ type Config struct {
 	TokenDuration  int
 	ServerAddress  string
 	AllowedOrigins []string
+	DbHost         string
+	DbPort         int
+	DbUser         string
+	DbPassword     string
+	DbName         string
 }
 
 // LoadEnvFile loads environment variables from a file and returns Config
@@ -23,12 +28,10 @@ func LoadEnvFile(configFile string) (*Config, error) {
 		envFile, err := os.Open(configFile)
 		if err == nil {
 			defer envFile.Close()
-			// Process file
 			return processEnvFile(envFile)
 		}
 	}
 
-	// Fallback to environment variables
 	return loadFromEnvironment()
 }
 
@@ -84,31 +87,39 @@ func processEnvFile(envFile *os.File) (*Config, error) {
 }
 
 func loadFromEnvironment() (*Config, error) {
-	// Parse token duration
 	tokenDuration, err := strconv.Atoi(os.Getenv("TOKEN_DURATION"))
 	if err != nil {
 		return nil, fmt.Errorf("invalid TOKEN_DURATION value: %v", err)
 	}
 
-	// Parse allowed origins
+	dbPort, err := strconv.Atoi(os.Getenv("DB_PORT"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid DB_PORT value: %v", err)
+	}
+
 	originsStr := os.Getenv("ALLOWED_ORIGINS")
-	fmt.Println("Origins:", originsStr)
+
 	var allowedOrigins []string
+
 	if originsStr != "" {
 		allowedOrigins = strings.Split(originsStr, ",")
-		// Trim spaces from each origin
 		for i := range allowedOrigins {
 			allowedOrigins[i] = strings.TrimSpace(allowedOrigins[i])
 		}
 	} else {
 		log.Printf("Warning: ALLOWED_ORIGINS is empty")
 	}
-	// Create config with parsed values
+
 	config := &Config{
 		SecretKey:      os.Getenv("SECRET_KEY"),
 		TokenDuration:  tokenDuration,
 		ServerAddress:  os.Getenv("SERVER_ADDRESS"),
 		AllowedOrigins: allowedOrigins,
+		DbHost:         os.Getenv("DB_HOST"),
+		DbPort:         dbPort,
+		DbUser:         os.Getenv("DB_USER"),
+		DbPassword:     os.Getenv("DB_PASSWORD"),
+		DbName:         os.Getenv("DB_NAME"),
 	}
 
 	// Validate required fields
