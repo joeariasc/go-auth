@@ -3,8 +3,8 @@ Content-Type: application/json
 X-Client-Type: web
 
 {
-  "username": "jam",
-  "description": ""
+  "username": "joe",
+  "description": "joe psql"
 }
 
 ###
