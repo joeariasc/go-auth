@@ -18,7 +18,7 @@ func NewCORSMiddleware(allowedOrigins []string) func(next http.Handler) http.Han
 
 			// Set other CORS headers
 			w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE")
-			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-Fingerprint")
+			w.Header().Set("Access-Control-Allow-Headers", "Accept, Content-Type, Content-Length, Accept-Encoding, Authorization, X-Fingerprint, X-Client-Type")
 			w.Header().Set("Access-Control-Allow-Credentials", "true")
 
 			// Handle preflight
