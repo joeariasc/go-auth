@@ -48,8 +48,8 @@ func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/register", authHandler.Register)
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
-	mux.HandleFunc("/api/auth/verify", authHandler.Verify)
-	mux.HandleFunc("/api/test", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/auth/verify", authHandler.Verify)
+	mux.HandleFunc("GET /api/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello World!"))
 	})
 
