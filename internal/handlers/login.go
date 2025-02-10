@@ -13,11 +13,6 @@ import (
 )
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	clientType := models.ClientType(r.Header.Get("X-Client-Type"))
 	if !clientType.IsValid() {
 		http.Error(w, "Invalid client type", http.StatusBadRequest)
@@ -70,7 +65,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("newFingerprint", newFingerprint)
 
-		_, err = h.conn.SetFingerprint(req.Username, newFingerprint)
+		user, err := h.conn.SetFingerprint(req.Username, newFingerprint)
 
 		if err != nil {
 			log.Printf("Failed to set new fingerprint: %v", err)
@@ -82,7 +77,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			Username:    req.Username,
 			Fingerprint: newFingerprint,
 			ClientType:  clientType,
-			Secret:      h.tokenManager.SecretKey,
+			Secret:      []byte(user.Secret),
 		}
 
 		// Generate token
