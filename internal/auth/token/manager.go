@@ -3,8 +3,9 @@ package token
 import (
 	"errors"
 	"fmt"
-	"github.com/joeariasc/go-auth/internal/models"
 	"time"
+
+	"github.com/joeariasc/go-auth/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -17,7 +18,7 @@ var (
 )
 
 type Manager struct {
-	secretKey     []byte
+	SecretKey     []byte
 	TokenDuration time.Duration
 }
 
@@ -25,7 +26,7 @@ type Params struct {
 	Username    string
 	Fingerprint string
 	ClientType  models.ClientType
-	Secret      string
+	Secret      []byte
 }
 
 type ManagerConfig struct {
@@ -35,7 +36,7 @@ type ManagerConfig struct {
 
 func NewManager(config ManagerConfig) *Manager {
 	return &Manager{
-		secretKey:     config.SecretKey,
+		SecretKey:     config.SecretKey,
 		TokenDuration: config.TokenDuration,
 	}
 }
@@ -59,7 +60,7 @@ func (m *Manager) GenerateToken(params Params) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
 	// Sign and get the complete encoded token as a string
-	tokenString, err := token.SignedString(m.secretKey)
+	tokenString, err := token.SignedString(params.Secret)
 	if err != nil {
 		return "", fmt.Errorf("failed to sign token: %w", err)
 	}
@@ -74,7 +75,7 @@ func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.U
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return m.secretKey, nil
+		return m.SecretKey, nil
 	})
 
 	if err != nil {
@@ -103,7 +104,7 @@ func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.U
 }
 
 // RefreshToken creates a new token while validating the old one
-func (m *Manager) RefreshToken(oldTokenString, currentFingerprint string) (string, error) {
+func (m *Manager) RefreshToken(oldTokenString, currentFingerprint string, secret []byte) (string, error) {
 	// Verify old token first
 	claims, err := m.VerifyToken(oldTokenString, currentFingerprint)
 	if err != nil {
@@ -122,7 +123,7 @@ func (m *Manager) RefreshToken(oldTokenString, currentFingerprint string) (strin
 		Username:    claims.Username,
 		Fingerprint: currentFingerprint,
 		ClientType:  models.ClientType(claims.ClientType),
-		Secret:      "",
+		Secret:      secret,
 	}
 
 	// Generate new token
@@ -135,7 +136,7 @@ func (m *Manager) extractExpiredClaims(tokenString string) (*models.UserClaims, 
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
 	token, err := parser.ParseWithClaims(tokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return m.secretKey, nil
+		return m.SecretKey, nil
 	})
 
 	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
@@ -175,7 +176,7 @@ func (m *Manager) extractClaimsWithoutValidation(tokenString string) (*models.Us
 	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
 
 	token, err := parser.ParseWithClaims(tokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return m.secretKey, nil
+		return m.SecretKey, nil
 	})
 
 	if err != nil {
