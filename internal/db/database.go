@@ -3,9 +3,10 @@ package db
 import (
 	"database/sql"
 	"errors"
+	"log"
+
 	"github.com/joeariasc/go-auth/internal/db/entity"
 	_ "github.com/lib/pq"
-	"log"
 )
 
 const create string = `
@@ -55,7 +56,7 @@ func (c *Connection) Insert(user *entity.User) (int, error) {
 	return id, nil
 }
 
-func (c *Connection) SetFingerprint(username string, fingerprint string) error {
+func (c *Connection) SetFingerprint(username string, fingerprint string) (entity.User, error) {
 	user := entity.User{}
 
 	query := `SELECT * FROM users WHERE username=$1`
@@ -65,19 +66,19 @@ func (c *Connection) SetFingerprint(username string, fingerprint string) error {
 	err := row.Scan(&user.Id, &user.Username, &user.CreatedAt, &user.Description, &user.Fingerprint, &user.Secret)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return ErrUsernameNotFound
+		return entity.User{}, ErrUsernameNotFound
 	}
 
 	if err != nil {
-		return err
+		return entity.User{}, err
 	}
 
 	query = `UPDATE users SET fingerprint=$1 WHERE username=$2`
 	_, err = c.DB.Exec(query, fingerprint, user.Username)
 	if err != nil {
-		return err
+		return entity.User{}, err
 	}
-	return nil
+	return user, nil
 }
 
 func (c *Connection) GetUser(username string) (*entity.User, error) {
