@@ -35,26 +35,27 @@ func main() {
 	fingerprintManager := fingerprint.NewManager()
 
 	tokenConfig := token.ManagerConfig{
-		SecretKey:     []byte(cfg.SecretKey),
+		Conn:          conn,
 		TokenDuration: time.Duration(cfg.TokenDuration) * time.Second,
 	}
 
 	tokenManager := token.NewManager(tokenConfig)
 
-	// Initialize handlers
+	// Initialize handlers & middlweware
 	authHandler := handlers.NewHandler(fingerprintManager, tokenManager, conn)
+	middleware := middleware.NewMiddleware(fingerprintManager, tokenManager)
 
 	// Setup routes with middleware
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/auth/register", authHandler.Register)
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
-	mux.HandleFunc("GET /api/auth/verify", authHandler.Verify)
+	mux.HandleFunc("GET /api/auth/verify", middleware.AuthMiddleware(authHandler.Verify))
 	mux.HandleFunc("GET /api/test", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello World!"))
 	})
 
 	// Setup CORS middleware
-	handler := middleware.NewCORSMiddleware(cfg.AllowedOrigins)(mux)
+	handler := middleware.CORSMiddleware(cfg.AllowedOrigins)(mux)
 
 	// Start server
 	serverAddr := cfg.ServerAddress
