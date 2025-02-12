@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/joeariasc/go-auth/internal/db"
 	"github.com/joeariasc/go-auth/internal/models"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -18,7 +19,7 @@ var (
 )
 
 type Manager struct {
-	SecretKey     []byte
+	Conn          *db.Connection
 	TokenDuration time.Duration
 }
 
@@ -30,13 +31,13 @@ type Params struct {
 }
 
 type ManagerConfig struct {
-	SecretKey     []byte
+	Conn          *db.Connection
 	TokenDuration time.Duration
 }
 
 func NewManager(config ManagerConfig) *Manager {
 	return &Manager{
-		SecretKey:     config.SecretKey,
+		Conn:          config.Conn,
 		TokenDuration: config.TokenDuration,
 	}
 }
@@ -69,13 +70,30 @@ func (m *Manager) GenerateToken(params Params) (string, error) {
 }
 
 func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.UserClaims, error) {
-	// parse and validate token
-	token, err := jwt.ParseWithClaims(tokenString, &models.UserClaims{}, func(t *jwt.Token) (interface{}, error) {
-		// Validate signing method
+	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
+
+	token, _ := parser.ParseWithClaims(tokenString, &models.UserClaims{}, func(t *jwt.Token) (interface{}, error) {
+		return nil, nil // We'll verify later with the correct secret
+	})
+
+	// Extract preliminary claims to get the user ID
+	prelimClaims, ok := token.Claims.(*models.UserClaims)
+	if !ok {
+		return nil, ErrInvalidClaims
+	}
+
+	// Get user's secret from database
+	user, err := m.Conn.GetUser(prelimClaims.Username)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	// Now parse and validate with the correct user secret
+	validToken, err := jwt.ParseWithClaims(tokenString, &models.UserClaims{}, func(t *jwt.Token) (interface{}, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 		}
-		return m.SecretKey, nil
+		return []byte(user.Secret), nil
 	})
 
 	if err != nil {
@@ -85,12 +103,11 @@ func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.U
 		return nil, fmt.Errorf("failed to parse token: %w", err)
 	}
 
-	if !token.Valid {
+	if !validToken.Valid {
 		return nil, ErrInvalidToken
 	}
 
-	// Extract claims
-	claims, ok := token.Claims.(*models.UserClaims)
+	claims, ok := validToken.Claims.(*models.UserClaims)
 	if !ok {
 		return nil, ErrInvalidClaims
 	}
@@ -103,61 +120,7 @@ func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.U
 	return claims, nil
 }
 
-// RefreshToken creates a new token while validating the old one
-func (m *Manager) RefreshToken(oldTokenString, currentFingerprint string, secret []byte) (string, error) {
-	// Verify old token first
-	claims, err := m.VerifyToken(oldTokenString, currentFingerprint)
-	if err != nil {
-		if errors.Is(err, ErrTokenExpired) {
-			// Optionally allow refresh for recently expired tokens
-			claims, err = m.extractExpiredClaims(oldTokenString)
-			if err != nil {
-				return "", err
-			}
-		} else {
-			return "", err
-		}
-	}
-
-	params := Params{
-		Username:    claims.Username,
-		Fingerprint: currentFingerprint,
-		ClientType:  models.ClientType(claims.ClientType),
-		Secret:      secret,
-	}
-
-	// Generate new token
-	return m.GenerateToken(params)
-}
-
-// extractExpiredClaims parses an expired token to extract its claims
-func (m *Manager) extractExpiredClaims(tokenString string) (*models.UserClaims, error) {
-	// Create parser with ParseOption
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-
-	token, err := parser.ParseWithClaims(tokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return m.SecretKey, nil
-	})
-
-	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
-		return nil, fmt.Errorf("failed to parse expired token: %w", err)
-	}
-
-	claims, ok := token.Claims.(*models.UserClaims)
-	if !ok {
-		return nil, ErrInvalidClaims
-	}
-
-	// Check if token is too old to refresh (e.g., expired more than 24 hours ago)
-	if claims.ExpiresAt.Time.Before(time.Now().Add(-24 * time.Hour)) {
-		return nil, fmt.Errorf("token too old to refresh")
-	}
-
-	return claims, nil
-}
-
-// ValidateFingerprint checks if the current fingerprint matches the one in the token
-func (m *Manager) ValidateFingerprint(tokenString, currentFingerprint string) error {
+/* func (m *Manager) ValidateFingerprint(tokenString, currentFingerprint string) error {
 	claims, err := m.extractClaimsWithoutValidation(tokenString)
 	if err != nil {
 		return err
@@ -189,4 +152,4 @@ func (m *Manager) extractClaimsWithoutValidation(tokenString string) (*models.Us
 	}
 
 	return claims, nil
-}
+} */
