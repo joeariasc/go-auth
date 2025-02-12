@@ -2,11 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/joeariasc/go-auth/internal/auth/fingerprint"
 	"log"
 	"net/http"
 
+	"github.com/joeariasc/go-auth/internal/auth/fingerprint"
 	"github.com/joeariasc/go-auth/internal/auth/token"
 	"github.com/joeariasc/go-auth/internal/models"
 	"github.com/joeariasc/go-auth/internal/utils"
@@ -36,8 +35,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	if req.Password == "wwco2025" {
 		clientFingerprint := utils.SanitizeHeader(r.Header.Get("X-Fingerprint"))
 
-		log.Printf("Client Fingerprint: %s", clientFingerprint)
-
 		ip, err := utils.GetIP(r)
 
 		if err != nil {
@@ -45,8 +42,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Failed to get IP", http.StatusInternalServerError)
 			return
 		}
-
-		log.Printf("Ip from the request: %s\n", ip)
 
 		fingerprintParams := fingerprint.Params{
 			ClientType:        clientType,
@@ -58,17 +53,13 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		newFingerprint, err := h.fingerprintManager.GenerateFingerprint(fingerprintParams)
 
 		if err != nil {
-			fmt.Println("Failed to generate fingerprint: ", err)
 			http.Error(w, "Failed to generate fingerprint", http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Println("newFingerprint", newFingerprint)
-
 		user, err := h.conn.SetFingerprint(req.Username, newFingerprint)
 
 		if err != nil {
-			log.Printf("Failed to set new fingerprint: %v", err)
 			http.Error(w, "Failed to set fingerprint", http.StatusInternalServerError)
 			return
 		}
@@ -84,7 +75,6 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		newToken, err := h.tokenManager.GenerateToken(tokenParams)
 
 		if err != nil {
-			log.Println("Failed to generate token: ", err)
 			http.Error(w, "Failed to generate token", http.StatusInternalServerError)
 			return
 		}
@@ -92,7 +82,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		// For web clients, set the fingerprint cookie
 		if clientType == models.WebClient {
 			http.SetCookie(w, &http.Cookie{
-				Name:     "token",
+				Name:     "session",
 				Value:    newToken,
 				Path:     "/",
 				HttpOnly: true,
