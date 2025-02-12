@@ -5,7 +5,7 @@ import (
 	"slices"
 )
 
-func NewCORSMiddleware(allowedOrigins []string) func(next http.Handler) http.Handler {
+func (m *Middleware) CORSMiddleware(allowedOrigins []string) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			origin := r.Header.Get("Origin")
