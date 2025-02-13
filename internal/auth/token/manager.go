@@ -119,37 +119,3 @@ func (m *Manager) VerifyToken(tokenString, currentFingerprint string) (*models.U
 
 	return claims, nil
 }
-
-/* func (m *Manager) ValidateFingerprint(tokenString, currentFingerprint string) error {
-	claims, err := m.extractClaimsWithoutValidation(tokenString)
-	if err != nil {
-		return err
-	}
-
-	if claims.Fingerprint != currentFingerprint {
-		return ErrInvalidFingerprint
-	}
-
-	return nil
-}
-
-// extractClaimsWithoutValidation gets claims without validating the token
-func (m *Manager) extractClaimsWithoutValidation(tokenString string) (*models.UserClaims, error) {
-	// Create parser with ParseOption
-	parser := jwt.NewParser(jwt.WithoutClaimsValidation())
-
-	token, err := parser.ParseWithClaims(tokenString, &models.UserClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return m.SecretKey, nil
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse token: %w", err)
-	}
-
-	claims, ok := token.Claims.(*models.UserClaims)
-	if !ok {
-		return nil, ErrInvalidClaims
-	}
-
-	return claims, nil
-} */
